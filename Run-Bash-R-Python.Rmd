@@ -1,0 +1,101 @@
+---
+title: "Run Bash Script in R and Python"
+author: "Yingqi Jing"
+date: "`r format(Sys.time(), '%B %e, %Y')`"
+header-includes:
+  - \usepackage{textcomp}
+  - \renewcommand{\thefigure}{S\arabic{figure}}
+  - \renewcommand{\thetable}{S\arabic{table}}
+  - \renewcommand{\thesection}{S\arabic{section}}
+  - \renewcommand{\thesubsection}{S\arabic{section}.\arabic{subsection}}
+  - \usepackage{tocloft}
+  - \settowidth{\cftsecnumwidth}{S10x}
+output:
+  pdf_document:
+   fig_crop: true
+   fig_caption: true
+   latex_engine: xelatex
+   toc: true
+   toc_depth: 4
+   number_section: true
+   pandoc_args: ["--variable=lof","--variable=lot","--bibliography=/Users/jakejing/switchdrive/bib/references.bib", "--csl=/Users/jakejing/switchdrive/bib/unified-style-linguistics.csl"]
+---
+
+```{r setup, include=FALSE}
+library(knitr)
+library(ggplot2)
+library(reticulate) # python engine
+use_python('/usr/local/bin/python3')
+
+knit_hooks$set(crop = hook_pdfcrop, pars = function(before, options, envir) {if(before) {par(family=my.font)} else NULL})
+opts_chunk$set(fig.path='figures/',
+               dev = 'cairo_pdf', dev.args=list(bg='transparent'), # or quartz_pdf (for lattice)
+               fig.height = 5,
+               fig.width = 6,
+               # engine.path = list(python = '/usr/local/bin/python3'),
+               # python.reticulate = T, # not necessary, if use_python() is used above
+               message = F,
+               warning = F,
+               autodep=T,
+               cache.comments=F,
+               crop=T,
+               comment=NA,
+               pars=T)
+# graphics setup:
+my.font = 'Helvetica'
+# ggplot
+theme_set(theme_bw(base_size = 24) +
+            theme(text = element_text(family = my.font),
+                  plot.background = element_rect(fill = "transparent", colour = NA)))
+
+options(width=180)
+```
+
+\clearpage
+
+R scripts
+============
+
+In order to run the bash command, we need to use the `system()` function in R. We first need to write the command in a string or a vector of characters, and feed the command in the system function. For example, we can list and filter all the pdfs in my Documents.
+
+```{r run the command with system function in R}
+bash_command_r = paste("ls -a ~/Documents/", "|", "grep", "'pdf'")
+try(system(bash_command_r, intern = TRUE, ignore.stderr = F, ignore.stdout = F))
+```
+
+
+Python scripts
+============
+
+In python, you need to use the `subprocess` module to run the bash commands. Of course, there is also a `os.system()` function, which can run simple command directly. For more advance usages, it is better to use the `subprocess` module. 
+
+
+```{python one way of formating the command in a string}
+import subprocess
+cmd = "ls -a ~/Documents/|grep 'pdf'"
+# Note: careful about the use of shell=True (strongly discouraged)
+ps = subprocess.Popen(cmd, shell=True,stdout=subprocess.PIPE,stderr=subprocess.STDOUT)
+output = ps.communicate()[0]
+print(output)
+```
+
+
+```{python run the command with system function in python}
+# Popen() function will create an instance 
+# where communicate() function will return the standard output and error
+c = subprocess.Popen(['ls','-a','/Users/jakejing/Documents/'], stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+stdout, stderr = c.communicate()
+
+print(stdout)
+print(stderr)
+```
+
+
+```{python subprocess check call}
+subprocess.check_call(['/Users/jakejing/git/run-bash-R-Python/program.sh',"/Users/jakejing/Documents/"])
+```
+
+
+References
+==========
+
